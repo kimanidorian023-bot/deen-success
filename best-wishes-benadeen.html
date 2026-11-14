@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="en">
   <head>
@@ -1442,6 +1441,11 @@
         margin-bottom: clamp(0.5rem, 1vh, 0.8rem);
         letter-spacing: -0.01em;
       }
+      #page-game .game-heading {
+        margin-bottom: clamp(1.4rem, 3.5vh, 2.2rem);
+        text-wrap: balance;
+        max-width: 22ch;
+      }
       .game-sub {
         color: var(--ink-soft);
         margin-bottom: clamp(2rem, 4vh, 3rem);
@@ -1490,9 +1494,9 @@
 
       .word-btn {
         font-family: "Fraunces", serif;
-        font-size: clamp(1.5rem, 4vw, 2.8rem);
+        font-size: clamp(1.15rem, 2.8vw, 2rem);
         font-style: italic;
-        padding: clamp(0.85rem, 1.5vw, 1.2rem) clamp(1.5rem, 2.5vw, 2rem);
+        padding: clamp(0.85rem, 1.5vw, 1.2rem) clamp(1.3rem, 2.5vw, 2rem);
         border-radius: 100px;
         border: none;
         cursor: pointer;
@@ -1678,7 +1682,9 @@
         color: var(--purple-soft);
         text-shadow: 0 0 25px var(--purple-glow);
         opacity: 0;
-        white-space: nowrap;
+        width: max-content;
+        max-width: 80vw;
+        text-align: center;
         animation: floatWord 7s ease-in-out infinite;
       }
       @keyframes floatWord {
@@ -1778,6 +1784,7 @@
       @media (max-width: 480px) {
         .game-arena {
           height: 200px;
+          justify-content: flex-end;
         }
         #word-doubt {
           left: 22%;
@@ -2256,7 +2263,7 @@
         <div class="hub-card" onclick="showPage('countdown')">
           <span class="hub-card-emoji">⏳</span>
           <h3>Countdown</h3>
-          <p>How close November really is.</p>
+          <p>Days left until your exams end.</p>
         </div>
         <div class="hub-card" onclick="showPage('subjects')">
           <span class="hub-card-emoji">📚</span>
@@ -2381,13 +2388,11 @@
 
     <!-- ============ GAME ============ -->
     <section class="page" id="page-game">
-      <h2 class="game-heading display">Do you believe in yourself, or Doubt?</h2>
-      <p class="game-sub">Try clicking on Doubt. See how far it gets you.</p>
+      <h2 class="game-heading display">Are you tired and ready to quit, or will you push to the end?</h2>
       <div class="game-arena" id="gameArena">
-        <button class="word-btn" id="word-doubt">Doubt</button>
-        <button class="word-btn" id="word-confidence">Confidence</button>
+        <button class="word-btn" id="word-doubt">Quit</button>
+        <button class="word-btn" id="word-confidence">Push to the end</button>
       </div>
-      <p class="game-hint" id="gameHint"></p>
     </section>
 
     <!-- ============ REVEAL ============ -->
@@ -2408,9 +2413,9 @@
 
     <!-- ============ COUNTDOWN ============ -->
     <section class="page" id="page-countdown">
-      <h2 class="hub-title display">Counting down to November</h2>
-      <p class="countdown-label">
-        Every day between now and then is a day you get to prepare a little more.
+      <h2 class="hub-title display">Days until your exams end</h2>
+      <p class="countdown-label" id="countdownLabel">
+        The finish line is 19 November. Every paper you finish brings you closer to it.
       </p>
       <div class="countdown-grid" id="countdownGrid">
         <div class="countdown-unit">
@@ -2431,7 +2436,7 @@
         </div>
       </div>
       <p class="countdown-note">
-        Counting to 2 November 2026 — adjust in the code if her actual exam date differs.
+        Counting down to the end of your exams · 19 November 2026
       </p>
     </section>
 
@@ -2661,7 +2666,6 @@
       const arena = document.getElementById("gameArena");
       const doubtBtn = document.getElementById("word-doubt");
       const confBtn = document.getElementById("word-confidence");
-      const hint = document.getElementById("gameHint");
 
       let rafId = null;
       let lastMouseX = 0, lastMouseY = 0;
@@ -2710,14 +2714,12 @@
       doubtBtn.addEventListener("click", (e) => {
         e.preventDefault();
         moveDoubtAwayFrom(e.clientX, e.clientY);
-        hint.textContent = "Nice try. Doubt isn't worth chasing anyway.";
       }, { passive: false });
       // touch support
       doubtBtn.addEventListener("touchstart", (e) => {
         e.preventDefault();
         const t = e.touches[0];
         moveDoubtAwayFrom(t.clientX, t.clientY);
-        hint.textContent = "It keeps slipping away, doesn't it?";
       }, { passive: false });
 
       confBtn.addEventListener("click", () => showPage("reveal"));
@@ -2746,14 +2748,16 @@
         const content = document.querySelector(".reveal-content");
         layer.innerHTML = "";
         const words = [
+          "The last lap is here.",
+          "You've come too far to look back.",
+          "You've made it this far.",
+          "Finish strong, Benadeen.",
+          "Almost there.",
           "You've got this!",
-          "Believe in yourself.",
           "So proud of you.",
-          "You are ready.",
-          "Shine, Benadeen.",
-          "Trust your prep.",
-          "One step at a time.",
           "You worked for this.",
+          "One step at a time.",
+          "Believe in yourself.",
         ];
 
         // Get content bounds to position around it
@@ -2773,6 +2777,14 @@
           return { left: leftPct, top: topPct };
         }
 
+        // on phones, give every phrase its own band down the page (no pile-ups)
+        const narrow = window.innerWidth < 700;
+        const bands = words.map((_, k) => k);
+        for (let k = bands.length - 1; k > 0; k--) {
+          const j = Math.floor(Math.random() * (k + 1));
+          [bands[k], bands[j]] = [bands[j], bands[k]];
+        }
+
         words.forEach((w, i) => {
           const el = document.createElement("span");
           el.className = "float-word";
@@ -2783,11 +2795,16 @@
           const x = centerX + Math.cos(angle) * radiusX * r;
           const y = centerY + Math.sin(angle) * radiusY * r;
           const pos = clampPosition(x, y, 15);
-          el.style.left = pos.left + "%";
-          el.style.top = pos.top + "%";
-          el.style.fontSize = 1 + Math.random() * 0.7 + "rem";
+          el.style.top = (narrow ? 8 + (bands[i] / (words.length - 1)) * 80 : pos.top) + "%";
+          el.style.fontSize = (window.innerWidth < 500 ? 0.95 : 1) + Math.random() * 0.7 + "rem";
           el.style.animationDelay = i * 0.6 + Math.random() + "s";
           layer.appendChild(el);
+          // keep the whole phrase inside the page, left and right
+          const L = layer.clientWidth || window.innerWidth;
+          const leftPx = narrow
+            ? (i % 2 === 0 ? 0.02 + Math.random() * 0.2 : 0.3 + Math.random() * 0.3) * L
+            : (pos.left / 100) * L;
+          el.style.left = Math.max(10, Math.min(L - el.offsetWidth - 10, leftPx)) + "px";
         });
 
         spawnFloatingPhotos(layer);
@@ -2850,7 +2867,7 @@
 
       /* ---------- Countdown timer ---------- */
       let countdownTimer = null;
-      const EXAM_TARGET = new Date("2026-11-02T08:00:00");
+      const EXAM_TARGET = new Date("2026-11-19T23:59:59+03:00"); // end of the last exam day (Kenya time)
 
       function startCountdown() {
         if (countdownTimer) clearInterval(countdownTimer);
@@ -2858,6 +2875,10 @@
           const now = new Date();
           let diff = EXAM_TARGET - now;
           if (diff < 0) diff = 0;
+          if (diff === 0) {
+            document.getElementById("countdownLabel").textContent =
+              "You made it to the finish line. Well done, Benadeen! 🎉";
+          }
           const days = Math.floor(diff / (1000 * 60 * 60 * 24));
           const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
           const mins = Math.floor((diff / (1000 * 60)) % 60);
